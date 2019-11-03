@@ -1,4 +1,3 @@
-require('dotenv').config()
 const express = require('express')
 const bookmarkRouter = express.Router()
 const bodyParser = express.json()
@@ -16,7 +15,7 @@ const bookmarks = [{
 
 bookmarkRouter
     .route('/bookmarks')
-    .get((req, res) => {
+    .get((req, res, next) => {
         const knexInstance = req.app.get('db')
         BookmarksService.getAllBookmarks(knexInstance)
             .then(bookmarks => {
