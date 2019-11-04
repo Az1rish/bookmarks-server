@@ -25,6 +25,7 @@ describe('Bookmarks Endpoints', function() {
             it(`responds with 200 and an empty list`, () => {
                 return supertest(app)
                     .get('/bookmarks')
+                    .set(`Authorization`, `bearer ${process.env.API_TOKEN}`)
                     .expect(200, [])
             })
         })
