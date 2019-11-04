@@ -69,8 +69,9 @@ bookmarkRouter
     .route('/bookmarks/:id')
     .get((req, res, next) => {
         const knexInstance = req.app.get('db')
-
-        BookmarksService.getById(knexInstance, req.params.id)
+        const { id } = req.params
+        
+        BookmarksService.getById(knexInstance, id)
             .then(bookmark => {
                 if (!bookmark) {
                     // make sure we found a card
