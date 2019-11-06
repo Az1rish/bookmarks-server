@@ -2,7 +2,7 @@ require('dotenv').config()
 const { expect } = require('chai')
 const knex = require('knex')
 const app = require('../src/app')
-const { makeBookmarksArray } = require('./bookmarks.fixtures')
+const { makeBookmarksArray, makeMaliciousBookmark } = require('./bookmarks.fixtures')
 
 describe('Bookmarks Endpoints', function() {
     let db
@@ -106,6 +106,43 @@ describe('Bookmarks Endpoints', function() {
                         .get(`/bookmarks/${postRes.body.id}`).set(`Authorization`, `Bearer ${process.env.API_TOKEN}`)
                         .expect(postRes.body)
                 )
+        })
+
+        const requiredFields = ['title', 'url', 'rating']
+
+        requiredFields.forEach(field => {
+            const newBookmark = {
+                title: "New Test title",
+                url: "http://www.NewTestUrl.com",
+                rating: "2"
+            }
+
+            it(`responds with 400 and an error message when the '${field}' is missing`, () => {
+                delete newBookmark[field]
+
+                return supertest(app)
+                    .post('/bookmarks')
+                    .set(`Authorization`, `Bearer ${process.env.API_TOKEN}`)
+                    .send(newBookmark)
+                    .expect(400, {
+                        error: { message: `Missing '${field}' in request body`}
+                    })
+            })
+        })
+
+        it('removes XSS attack content from response', () => {
+            const { maliciousBookmark, expectedBookmark } = makeMaliciousBookmark()
+            return supertest(app)
+                .post('/bookmarks')
+                .set(`Authorization`, `Bearer ${process.env.API_TOKEN}`)
+                .send(maliciousBookmark)
+                .expect(201)
+                .expect(res => {
+                    expect(res.body.title).to.eql(expectedBookmark.title)
+                    expect(res.body.url).to.eql(expectedBookmark.url)
+                    expect(res.body.description).to.eql(expectedBookmark.description)
+                    expect(res.body.rating).to.eql(expectedBookmark.rating)
+                })
         })
     })
 

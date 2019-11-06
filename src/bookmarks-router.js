@@ -9,9 +9,9 @@ const BookmarksService = require('./bookmarks-service')
 const serializeBookmark = bookmark => ({
     id: bookmark.id,
     title: xss(bookmark.title),
-    url: xss(bookmark.url),
+    url: bookmark.url,
     description: xss(bookmark.description),
-    rating: xss(bookmark.rating),
+    rating: bookmark.rating,
 })
 
 bookmarkRouter
