@@ -1,17 +1,18 @@
 const express = require('express')
+const xss = require('xss')
+const { isWebUri } = require('valid-url')
 const bookmarkRouter = express.Router()
 const bodyParser = express.json()
-const uuid = require('uuid/v4')
 const logger = require('./logger')
 const BookmarksService = require('./bookmarks-service')
 
-const bookmarks = [{
-    id: 1,
-    title: "Google",
-    url: "www.google.com",
-    description: "All of your searching needs",
-    rating: 5
-}]
+const serializeBookmark = bookmark => ({
+    id: bookmark.id,
+    title: xss(bookmark.title),
+    url: xss(bookmark.url),
+    description: xss(bookmark.description),
+    rating: xss(bookmark.rating),
+})
 
 bookmarkRouter
     .route('/bookmarks')
@@ -23,47 +24,50 @@ bookmarkRouter
             })
             .catch(next)
     })
-    .post(bodyParser, (req, res) => {
-        console.log(req.body);
-        const { title, url, rating, description="" } = req.body;
-
-        if(!title) {
-            logger.error('Title is required');
-            return res
-                .status(400)
-                .send('Invalid data');
-        }
-        if(!url) {
-            logger.error('URL is required');
-            return res
-                .status(400)
-                .send('Invalid data');
-        }
-        if(!rating) {
-            logger.error('Rating is required');
-            return res
-                .status(400)
-                .send('Invalid data');
+    .post(bodyParser, (req, res, next) => {
+        for (const field of ['title', 'url', 'rating']) {
+            if (!req.body[field]) {
+                logger.error(`${field} is required`)
+                return res.status(400).json({
+                    error: { message: `Missing '${field}' in request body` }
+                })
+            }
         }
 
-        const id = uuid();
-        const bookmark = {
-            id,
-            title,
-            url,
-            description,
-            rating
-        };
+        const { title, url, rating, description } = req.body
 
-        bookmarks.push(bookmark);
+        const ratingNumber = Number(rating)
 
-        logger.info(`Bookmark with id ${id} created`);
-        
-        res 
-            .status(201)
-            .location(`http://localhost:8000/bookmark/${id}`)
-            .json(bookmark);
+        if (!Number.isInteger(ratingNumber) || ratingNumber < 0 || ratingNumber > 5) {
+            logger.error(`Invalid rating '${rating}' supplied`)
+            return res.status(400).json({
+                error: { message: `'rating' must be a number between 0 and 5`}
+            })
+        }
+
+        if (!isWebUri(url)) {
+            logger.error(`Invalid url '${url}' supplied`)
+            return res.status(400).json({
+                error: { message: `'url' must be a valid URL`}
+            })
+        }
+
+        const newBookmark = { title, url, rating, description }
+
+        BookmarksService.insertBookmark(
+            req.app.get('db'),
+            newBookmark
+        )
+            .then(bookmark => {
+                logger.info(`Bookmark with id ${bookmark.id} created`)
+                res
+                    .status(201)
+                    .location(`/bookmarks/${bookmark.id}`)
+                    .json(serializeBookmark(bookmark))
+            })
+            .catch(next)
     })
+   
 
 bookmarkRouter
     .route('/bookmarks/:id')
