@@ -21,7 +21,7 @@ describe('Bookmarks Endpoints', function() {
 
     afterEach('cleanup', () => db('bookmarks').truncate())
 
-    describe.only('Unauthorized requests', () => {
+    describe('Unauthorized requests', () => {
         const testBookmarks = makeBookmarksArray()
 
         beforeEach('insert bookmarks', () => {
@@ -96,7 +96,7 @@ describe('Bookmarks Endpoints', function() {
 
             it('removes XSS attack content', () => {
                 return supertest(app)
-                    .get(`/bookmarks/`)
+                    .get(`/bookmarks`)
                     .set(`Authorization`, `Bearer ${process.env.API_TOKEN}`)
                     .expect(200)
                     .expect(res => {
@@ -224,11 +224,11 @@ describe('Bookmarks Endpoints', function() {
     })
 
     describe(`DELETE /bookmarks/:id`, () => {
-        context('Given no articles', () => {
+        context('Given no bookmarks', () => {
             it('responds with 404', () => {
                 const bookmarkId = 123456
                 return supertest(app)
-                    .delete(`bookmarks/${bookmarkId}`)
+                    .delete(`/bookmarks/${bookmarkId}`)
                     .set(`Authorization`, `Bearer ${process.env.API_TOKEN}`)
                     .expect(404, { error: { message: `Bookmark doesn't exist` } })
             })
