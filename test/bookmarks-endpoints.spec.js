@@ -21,6 +21,43 @@ describe('Bookmarks Endpoints', function() {
 
     afterEach('cleanup', () => db('bookmarks').truncate())
 
+    describe.only('Unauthorized requests', () => {
+        const testBookmarks = makeBookmarksArray()
+
+        beforeEach('insert bookmarks', () => {
+            return db
+                .into('bookmarks')
+                .insert(testBookmarks)
+        })
+
+        it(`responds with 401 Unauthorized for GET /bookmarks`, () => {
+            return supertest(app)
+                .get('/bookmarks')
+                .expect(401, { error: 'Unauthorized request' })
+        })
+
+        it(`responds with 401 Unauthorized for POST /bookmarks`, () => {
+            return supertest(app)
+                .post('/bookmarks')
+                .send({ title: 'test-title', url: 'http://some.thing.com', rating: 1 })
+                .expect(401, { error: 'Unauthorized request' })
+        })
+
+        it(`responds with 401 Unauthorized for GET /bookmarks/:id`, () => {
+            const secondBookmark = testBookmarks[1]
+            return supertest(app)
+                .get(`/bookmarks/${secondBookmark.id}`)
+                .expect(401, { error: 'Unauthorized request' })
+        })
+      
+        it(`responds with 401 Unauthorized for DELETE /bookmarks/:id`, () => {
+            const aBookmark = testBookmarks[1]
+            return supertest(app)
+                .delete(`/bookmarks/${aBookmark.id}`)
+                .expect(401, { error: 'Unauthorized request' })
+        })
+    })
+
     describe('GET /bookmarks', () => {
         context('Given no bookmarks', () => {
             it(`responds with 200 and an empty list`, () => {
@@ -186,7 +223,7 @@ describe('Bookmarks Endpoints', function() {
         })
     })
 
-    describe.only(`DELETE /bookmarks/:id`, () => {
+    describe(`DELETE /bookmarks/:id`, () => {
         context('Given no articles', () => {
             it('responds with 404', () => {
                 const bookmarkId = 123456
