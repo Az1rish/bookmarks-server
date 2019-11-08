@@ -108,6 +108,22 @@ bookmarkRouter
             })
             .catch(next)
     })
+    .patch(bodyParser, (req, res, next) => {
+        const { title, url, description, rating } = req.body
+        const bookmarkToUpdate = { title, url, description,rating }
+        const knexInstance = req.app.get('db')
+        const { id } = req.params
 
+        BookmarksService.updateBookmark(
+            knexInstance,
+            id,
+            bookmarkToUpdate
+        )
+            .then(numRowsAffected => {
+                logger.info(`Bookmark with id ${id} updated`)
+                res.status(204).end()
+            })
+            .catch(next)
+    })
 
 module.exports = bookmarkRouter
